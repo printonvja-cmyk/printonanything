@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PRINTON ANYTHING | Owner Admin</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#111;color:#fff;min-height:100vh}
+.wrap{max-width:900px;margin:auto;padding:24px}
+.card{background:#fff;color:#222;border-radius:16px;padding:22px;margin:18px 0;box-shadow:0 8px 30px rgba(0,0,0,.2)}
+h1{margin:0 0 8px;font-size:28px}
+h2{margin-top:0}
+input{width:100%;padding:13px;margin:7px 0;border:1px solid #ddd;border-radius:9px;font-size:15px}
+button{border:0;border-radius:9px;padding:12px 16px;font-weight:700;cursor:pointer;margin:5px 4px 5px 0}
+.primary{background:#25D366;color:#fff}
+.dark{background:#111;color:#fff}
+.red{background:#e74c3c;color:#fff}
+.muted{color:#777;font-size:14px;line-height:1.5}
+.hidden{display:none}
+.row{display:grid;grid-template-columns:110px 1fr auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #eee}
+.row img{width:100px;height:100px;object-fit:contain;background:#f3f3f3;border-radius:8px}
+.status{padding:10px;border-radius:8px;background:#f2f2f2;color:#333;margin:10px 0}
+@media(max-width:650px){.row{grid-template-columns:80px 1fr}.row img{width:75px;height:75px}.row .actions{grid-column:2}}
+a{color:#25a65a}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>PRINTON ANYTHING — Owner Admin</h1>
+    <p class="muted">Only the owner account should use this page. Product changes are stored online.</p>
+    <a href="index.html">← Back to website</a>
+  </div>
+
+  <div id="loginCard" class="card">
+    <h2>Admin Login</h2>
+    <input id="email" type="email" placeholder="Owner email">
+    <input id="password" type="password" placeholder="Password">
+    <button class="primary" id="loginBtn">Login</button>
+    <div id="loginStatus" class="status"></div>
+  </div>
+
+  <div id="dashboard" class="hidden">
+    <div class="card">
+      <h2>Add Product</h2>
+      <input id="productName" placeholder="Product name">
+      <input id="productImage" type="file" accept="image/*">
+      <button class="primary" id="addBtn">Add Product</button>
+      <button class="dark" id="importBtn">Import Current 9 Products</button>
+      <button class="dark" id="logoutBtn">Logout</button>
+      <div id="status" class="status"></div>
+      <p class="muted">
+        “Import Current 9 Products” is only needed once. After that, you can add,
+        rename, replace photos, or delete products from this page.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Products</h2>
+      <div id="productList"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "sb_publishable_mrHv-https://lpjsuqhlykwmxtrpndsr.supabase.co";
+const SUPABASE_KEY = "sb_publishable_mrHv-sb_publishable_mrHv-zYvcsTdJ7bv2S0RBA_KhODrWhF";
+const configured =
+  !SUPABASE_URL.includes("PASTE_YOUR") &&
+  !SUPABASE_KEY.includes("PASTE_YOUR");
+
+const sb = configured
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+  : null;
+
+const $ = id => document.getElementById(id);
+
+function setStatus(text, error=false){
+  $("status").textContent = text;
+  $("status").style.color = error ? "#b00020" : "#333";
+}
+function setLoginStatus(text){
+  $("loginStatus").textContent = text;
+}
+
+async function init(){
+  if(!sb){
+    setLoginStatus("First connect Supabase in this file and in index.html.");
+    return;
+  }
+  const {data:{session}} = await sb.auth.getSession();
+  showState(!!session);
+  if(session) await loadProducts();
+}
+
+function showState(loggedIn){
+  $("loginCard").classList.toggle("hidden", loggedIn);
+  $("dashboard").classList.toggle("hidden", !loggedIn);
+}
+
+$("loginBtn").onclick = async () => {
+  if(!sb) return setLoginStatus("Supabase is not connected yet.");
+  setLoginStatus("Logging in…");
+  const {error} = await sb.auth.signInWithPassword({
+    email: $("email").value.trim(),
+    password: $("password").value
+  });
+  if(error){
+    setLoginStatus(error.message);
+    return;
+  }
+  setLoginStatus("");
+  showState(true);
+  await loadProducts();
+};
+
+$("logoutBtn").onclick = async () => {
+  await sb.auth.signOut();
+  showState(false);
+};
+
+async function loadProducts(){
+  const {data,error} = await sb.from("products")
+    .select("id,name,image_url,sort_order")
+    .order("sort_order",{ascending:true})
+    .order("created_at",{ascending:true});
+  if(error){ setStatus(error.message,true); return; }
+
+  $("productList").innerHTML = (data||[]).map(p => `
+    <div class="row">
+      <img src="${escapeHtml(p.image_url)}" alt="">
+      <div>
+        <strong>${escapeHtml(p.name)}</strong><br>
+        <button class="dark" onclick="editProduct('${p.id}',${JSON.stringify(p.name).replace(/</g,"\\u003c")})">Rename</button>
+        <button class="dark" onclick="replacePhoto('${p.id}')">Change Photo</button>
+      </div>
+      <div class="actions">
+        <button class="red" onclick="deleteProduct('${p.id}')">Delete</button>
+      </div>
+    </div>
+  `).join("") || '<p class="muted">No products yet.</p>';
+}
+
+function escapeHtml(v){
+  return String(v??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch]));
+}
+
+async function addImage(file, path){
+  const {error} = await sb.storage.from("product-images").upload(path,file,{
+    upsert:true, cacheControl:"3600", contentType:file.type
+  });
+  if(error) throw error;
+  const {data} = sb.storage.from("product-images").getPublicUrl(path);
+  return data.publicUrl;
+}
+
+$("addBtn").onclick = async () => {
+  try{
+    const name = $("productName").value.trim();
+    const file = $("productImage").files[0];
+    if(!name || !file) return setStatus("Enter a name and choose a photo.",true);
+    setStatus("Uploading…");
+    const path = "products/" + crypto.randomUUID() + "-" + file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+    const url = await addImage(file,path);
+    const {data: existing} = await sb.from("products").select("sort_order").order("sort_order",{ascending:false}).limit(1);
+    const next = existing?.length ? Number(existing[0].sort_order)+1 : 1;
+    const {error} = await sb.from("products").insert({name,image_url:url,image_path:path,sort_order:next});
+    if(error) throw error;
+    $("productName").value="";
+    $("productImage").value="";
+    setStatus("Product added.");
+    await loadProducts();
+  }catch(e){setStatus(e.message,true);}
+};
+
+window.editProduct = async (id, oldName) => {
+  const name = prompt("New product name:", oldName);
+  if(!name || name.trim()===oldName) return;
+  const {error}=await sb.from("products").update({name:name.trim()}).eq("id",id);
+  if(error) return setStatus(error.message,true);
+  setStatus("Name updated.");
+  await loadProducts();
+};
+
+window.replacePhoto = async id => {
+  const input=document.createElement("input");
+  input.type="file"; input.accept="image/*";
+  input.onchange=async()=>{
+    const file=input.files[0]; if(!file)return;
+    try{
+      setStatus("Uploading new photo…");
+      const path="products/"+crypto.randomUUID()+"-"+file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+      const url=await addImage(file,path);
+      const {data:old}=await sb.from("products").select("image_path").eq("id",id).single();
+      const {error}=await sb.from("products").update({image_url:url,image_path:path}).eq("id",id);
+      if(error) throw error;
+      if(old?.image_path) await sb.storage.from("product-images").remove([old.image_path]);
+      setStatus("Photo changed.");
+      await loadProducts();
+    }catch(e){setStatus(e.message,true);}
+  };
+  input.click();
+};
+
+window.deleteProduct = async id => {
+  if(!confirm("Delete this product?")) return;
+  try{
+    const {data:p}=await sb.from("products").select("image_path").eq("id",id).single();
+    const {error}=await sb.from("products").delete().eq("id",id);
+    if(error) throw error;
+    if(p?.image_path) await sb.storage.from("product-images").remove([p.image_path]);
+    setStatus("Product deleted.");
+    await loadProducts();
+  }catch(e){setStatus(e.message,true);}
+};
+
+/* Current 9 products are embedded in a separate JS file generated with this package. */
+async function importCurrentProducts(){
+  if(typeof CURRENT_PRODUCTS==="undefined"){
+    return setStatus("Current product data file is missing.",true);
+  }
+  if(!confirm("Import the current 9 products into the online database?")) return;
+  try{
+    setStatus("Importing…");
+    const {data: existing} = await sb.from("products").select("name");
+    const existingNames=new Set((existing||[]).map(x=>x.name));
+    let order=1;
+    for(const p of CURRENT_PRODUCTS){
+      if(existingNames.has(p.name)) {order++; continue;}
+      const blob=await (await fetch(p.image)).blob();
+      const ext=(blob.type.split("/")[1]||"jpg").replace("jpeg","jpg");
+      const path="products/"+crypto.randomUUID()+"."+ext;
+      const url=await addImage(blob,path);
+      const {error}=await sb.from("products").insert({
+        name:p.name,image_url:url,image_path:path,sort_order:order
+      });
+      if(error) throw error;
+      order++;
+    }
+    setStatus("Current products imported.");
+    await loadProducts();
+  }catch(e){setStatus(e.message,true);}
+}
+$("importBtn").onclick=importCurrentProducts;
+
+init();
+</script>
+<script src="current-products.js"></script>
+</body>
+</html>
