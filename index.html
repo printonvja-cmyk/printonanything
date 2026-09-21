@@ -63,6 +63,18 @@ section{padding:45px 5%}
 .products{grid-template-columns:1fr}
 .product-img{height:360px;padding:6px}
 }
+
+.product-tools{display:flex;justify-content:center;margin:0 auto 22px;padding:0 16px}
+#productSearch{width:min(520px,100%);padding:13px 16px;border:1px solid rgba(214,181,106,.45);border-radius:999px;background:#111;color:#fff;outline:none}
+#productSearch::placeholder{color:#aaa}
+#productSearch:focus{border-color:#D6B56A;box-shadow:0 0 0 3px rgba(214,181,106,.15)}
+.product-img{cursor:zoom-in}
+.image-modal{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;padding:24px;z-index:9999}
+.image-modal.open{display:flex}
+.image-modal img{max-width:95vw;max-height:88vh;object-fit:contain;border-radius:12px}
+.image-modal button{position:absolute;top:18px;right:20px;border:0;background:#D6B56A;color:#111;border-radius:50%;width:40px;height:40px;font-size:24px;cursor:pointer}
+.floating-whatsapp{position:fixed;right:18px;bottom:18px;z-index:9998;background:#25D366;color:#071b0d;text-decoration:none;border-radius:999px;padding:13px 17px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+
 </style>
 <style>
 .products-grid-inner{display:contents}
@@ -86,6 +98,11 @@ section{padding:45px 5%}
 <p>Gift Items • Custom Printing • Special Moments</p>
 <a class="button" href="https://wa.me/919948181781?text=Hello%20PRINTON%20ANYTHING,%20I%20want%20to%20place%20an%20order.">Order on WhatsApp</a>
 </section>
+
+<div class="product-tools" aria-label="Product search">
+  <input id="productSearch" type="search" placeholder="Search gifts..." aria-label="Search products">
+</div>
+
 <section id="products">
 <h2 class="title">Our Products</h2>
 <div class="products"><div class="products-grid-inner" id="productsGrid"><p class="loading">Loading products…</p></div></div>
@@ -165,6 +182,52 @@ function escapeHtml(value){
 }
 
 loadProducts();
+
+/* Small website enhancements: search, image zoom, and floating WhatsApp. */
+(function(){
+  const search = document.getElementById("productSearch");
+  const grid = document.getElementById("productsGrid");
+  if (search && grid) {
+    search.addEventListener("input", function(){
+      const term = this.value.trim().toLowerCase();
+      grid.querySelectorAll(".product").forEach(function(card){
+        card.style.display = card.textContent.toLowerCase().includes(term) ? "" : "none";
+      });
+    });
+  }
+
+  const modal = document.getElementById("imageModal");
+  const expanded = document.getElementById("expandedProductImage");
+  const close = document.getElementById("closeImageModal");
+  if (modal && expanded && close) {
+    document.addEventListener("click", function(event){
+      const image = event.target.closest(".product-img");
+      if (!image) return;
+      expanded.src = image.src;
+      expanded.alt = image.alt || "Product image";
+      modal.classList.add("open");
+    });
+    function closeModal(){
+      modal.classList.remove("open");
+      expanded.removeAttribute("src");
+    }
+    close.addEventListener("click", closeModal);
+    modal.addEventListener("click", function(event){
+      if (event.target === modal) closeModal();
+    });
+    document.addEventListener("keydown", function(event){
+      if (event.key === "Escape") closeModal();
+    });
+  }
+})();
+
 </script>
+
+<div class="image-modal" id="imageModal" role="dialog" aria-modal="true" aria-label="Expanded product image">
+  <button type="button" id="closeImageModal" aria-label="Close image">×</button>
+  <img id="expandedProductImage" alt="">
+</div>
+<a class="floating-whatsapp" href="https://wa.me/919948181781?text=Hello%20PRINTON%20ANYTHING,%20I%20want%20to%20place%20an%20order." target="_blank" rel="noopener" aria-label="Order on WhatsApp">WhatsApp</a>
+
 </body>
 </html>
