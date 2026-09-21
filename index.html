@@ -143,20 +143,24 @@ const client = hasSupabaseConfig
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
   : null;
 
+let allProducts = [];
+let selectedCategory = "All";
+let selectedSubcategory = "All";
+
 const fallbackProducts = [];
 
 async function loadProducts(){
   const grid = document.getElementById("productsGrid");
   if (!client) {
-    grid.innerHTML = fallbackProducts.length
-      ? fallbackProducts.map(productCard).join("")
-      : '<p class="loading">Supabase setup is not connected yet.</p>';
+    allProducts = fallbackProducts || [];
+    renderCategoryFilters();
+    renderProducts();
     return;
   }
 
   const { data, error } = await client
     .from("products")
-    .select("id,name,image_url,sort_order")
+    .select("id,name,image_url,sort_order,category,subcategory")
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
 
@@ -166,7 +170,9 @@ async function loadProducts(){
     return;
   }
 
-  grid.innerHTML = (data || []).map(productCard).join("");
+  allProducts = data || [];
+  renderCategoryFilters();
+  renderProducts();
 }
 
 function productCard(p){
@@ -302,6 +308,12 @@ function renderProducts(){
     );
   }
 
+  const search = document.getElementById("productSearch");
+  const term = search ? search.value.trim().toLowerCase() : "";
+  if (term) {
+    products = products.filter(p => (p.name || "").toLowerCase().includes(term));
+  }
+
   grid.innerHTML = products.length
     ? products.map(productCard).join("")
     : '<p class="loading">No products in this collection yet.</p>';
@@ -348,10 +360,7 @@ loadProducts();
   const grid = document.getElementById("productsGrid");
   if (search && grid) {
     search.addEventListener("input", function(){
-      const term = this.value.trim().toLowerCase();
-      grid.querySelectorAll(".product").forEach(function(card){
-        card.style.display = card.textContent.toLowerCase().includes(term) ? "" : "none";
-      });
+      renderProducts();
     });
   }
 
