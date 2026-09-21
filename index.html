@@ -63,74 +63,6 @@ section{padding:45px 5%}
 .products{grid-template-columns:1fr}
 .product-img{height:360px;padding:6px}
 }
-
-.category-filters{
-  display:flex;
-  flex-wrap:wrap;
-  justify-content:center;
-  gap:10px;
-  margin:0 auto 12px;
-  max-width:1000px;
-}
-
-.subcategory-filters{
-  display:flex;
-  flex-wrap:wrap;
-  justify-content:center;
-  gap:8px;
-  margin:0 auto 24px;
-  max-width:1000px;
-}
-
-.category-chip,
-.subcategory-chip{
-  border:1px solid rgba(0,0,0,.12);
-  background:#fff;
-  color:#555;
-  border-radius:999px;
-  padding:9px 16px;
-  font-size:13px;
-  font-weight:700;
-  cursor:pointer;
-  transition:transform .18s ease, box-shadow .18s ease, background .18s ease, color .18s ease;
-}
-
-.category-chip:hover,
-.subcategory-chip:hover{
-  transform:translateY(-1px);
-}
-
-.category-chip.active,
-.subcategory-chip.active{
-  background:#111;
-  color:#fff;
-  border-color:#111;
-  box-shadow:0 6px 18px rgba(0,0,0,.12);
-}
-
-@media(max-width:650px){
-  .category-filters,
-  .subcategory-filters{
-    justify-content:flex-start;
-    overflow-x:auto;
-    flex-wrap:nowrap;
-    padding:0 4px 6px;
-    -webkit-overflow-scrolling:touch;
-    scrollbar-width:none;
-  }
-
-  .category-filters::-webkit-scrollbar,
-  .subcategory-filters::-webkit-scrollbar{
-    display:none;
-  }
-
-  .category-chip,
-  .subcategory-chip{
-    flex:0 0 auto;
-    white-space:nowrap;
-  }
-}
-
 </style>
 <style>
 .products-grid-inner{display:contents}
@@ -160,9 +92,8 @@ section{padding:45px 5%}
 </section>
 <section class="contact" id="contact">
 <h2 class="title">Contact Us</h2>
-<p>📍 Pipula Road, SBI Bank Road, 3rd Line</p>
-<p>Opposite Model Dairy, 1st Floor</p>
-<p>📱 WhatsApp Orders Available</p>
+<p>📍 D.NO. 28-7-11, Mohiddin Street, Arundalpet, Eluru Road, Vijayawada - 520002</p>
+<p>📱 Cell: 9948181781, 9493680656</p>
 <br/>
 <a class="button" href="https://wa.me/919948181781?text=Hello%20PRINTON%20ANYTHING">WhatsApp Us</a>
 </section>
@@ -187,23 +118,18 @@ const client = hasSupabaseConfig
 
 const fallbackProducts = [];
 
-let allProducts = [];
-let selectedCategory = "All";
-let selectedSubcategory = "All";
-
 async function loadProducts(){
   const grid = document.getElementById("productsGrid");
-
   if (!client) {
-    allProducts = fallbackProducts || [];
-    renderCategoryFilters();
-    renderProducts();
+    grid.innerHTML = fallbackProducts.length
+      ? fallbackProducts.map(productCard).join("")
+      : '<p class="loading">Supabase setup is not connected yet.</p>';
     return;
   }
 
   const { data, error } = await client
     .from("products")
-    .select("id,name,image_url,sort_order,category,subcategory")
+    .select("id,name,image_url,sort_order")
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
 
@@ -213,149 +139,20 @@ async function loadProducts(){
     return;
   }
 
-  allProducts = data || [];
-  renderCategoryFilters();
-  renderProducts();
-}
-
-function getCategories(){
-  const categories = [...new Set(
-    allProducts
-      .map(p => (p.category || "").trim())
-      .filter(Boolean)
-  )];
-
-  return ["All", ...categories];
-}
-
-function getSubcategories(category){
-  const source = category === "All"
-    ? allProducts
-    : allProducts.filter(p => (p.category || "").trim() === category);
-
-  return ["All", ...new Set(
-    source
-      .map(p => (p.subcategory || "").trim())
-      .filter(Boolean)
-  )];
-}
-
-function renderCategoryFilters(){
-  const productsSection = document.getElementById("products");
-  if (!productsSection) return;
-
-  let filters = document.getElementById("categoryFilters");
-
-  if (!filters) {
-    const title = productsSection.querySelector(".title");
-    filters = document.createElement("div");
-    filters.id = "categoryFilters";
-    filters.className = "category-filters";
-    if (title) {
-      title.insertAdjacentElement("afterend", filters);
-    } else {
-      productsSection.prepend(filters);
-    }
-  }
-
-  const categories = getCategories();
-
-  filters.innerHTML = categories.map(category => `
-    <button
-      type="button"
-      class="category-chip ${category === selectedCategory ? "active" : ""}"
-      data-category="${escapeHtml(category)}"
-    >
-      ${escapeHtml(category)}
-    </button>
-  `).join("");
-
-  filters.querySelectorAll(".category-chip").forEach(button => {
-    button.addEventListener("click", () => {
-      selectedCategory = button.dataset.category || "All";
-      selectedSubcategory = "All";
-      renderCategoryFilters();
-      renderProducts();
-    });
-  });
-
-  let subfilters = document.getElementById("subcategoryFilters");
-
-  if (!subfilters) {
-    subfilters = document.createElement("div");
-    subfilters.id = "subcategoryFilters";
-    subfilters.className = "subcategory-filters";
-    filters.insertAdjacentElement("afterend", subfilters);
-  }
-
-  const subcategories = getSubcategories(selectedCategory);
-
-  subfilters.innerHTML = subcategories.length > 1
-    ? subcategories.map(subcategory => `
-        <button
-          type="button"
-          class="subcategory-chip ${subcategory === selectedSubcategory ? "active" : ""}"
-          data-subcategory="${escapeHtml(subcategory)}"
-        >
-          ${escapeHtml(subcategory)}
-        </button>
-      `).join("")
-    : "";
-
-  subfilters.querySelectorAll(".subcategory-chip").forEach(button => {
-    button.addEventListener("click", () => {
-      selectedSubcategory = button.dataset.subcategory || "All";
-      renderCategoryFilters();
-      renderProducts();
-    });
-  });
-}
-
-function renderProducts(){
-  const grid = document.getElementById("productsGrid");
-  if (!grid) return;
-
-  let products = allProducts;
-
-  if (selectedCategory !== "All") {
-    products = products.filter(
-      p => (p.category || "").trim() === selectedCategory
-    );
-  }
-
-  if (selectedSubcategory !== "All") {
-    products = products.filter(
-      p => (p.subcategory || "").trim() === selectedSubcategory
-    );
-  }
-
-  grid.innerHTML = products.length
-    ? products.map(productCard).join("")
-    : '<p class="loading">No products in this collection yet.</p>';
+  grid.innerHTML = (data || []).map(productCard).join("");
 }
 
 function productCard(p){
   const msg = encodeURIComponent(
     "Hello PRINTON ANYTHING, I want to order: " + p.name
   );
-
   return `
     <div class="product">
-      <img
-        class="product-img"
-        src="${escapeHtml(p.image_url)}"
-        alt="${escapeHtml(p.name)}"
-        loading="lazy"
-      >
+      <img class="product-img" src="${escapeHtml(p.image_url)}" alt="${escapeHtml(p.name)}">
       <h3>${escapeHtml(p.name)}</h3>
       <div class="product-actions">
-        <a
-          class="order"
-          href="https://wa.me/919948181781?text=${msg}"
-          target="_blank"
-          rel="noopener"
-        >
-          Click to Order
+        <a class="order" href="https://wa.me/919948181781?text=${msg}" target="_blank" rel="noopener">
+          Order on WhatsApp
         </a>
       </div>
     </div>`;
