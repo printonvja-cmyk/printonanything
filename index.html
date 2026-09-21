@@ -75,6 +75,13 @@ section{padding:45px 5%}
 .image-modal button{position:absolute;top:18px;right:20px;border:0;background:#D6B56A;color:#111;border-radius:50%;width:40px;height:40px;font-size:24px;cursor:pointer}
 .floating-whatsapp{position:fixed;right:18px;bottom:18px;z-index:9998;background:#25D366;color:#071b0d;text-decoration:none;border-radius:999px;padding:13px 17px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.3)}
 
+
+/* Top scrolling shop bar */
+.top-scroll-bar{width:100%;overflow:hidden;background:#000;color:#D6B56A;border-bottom:1px solid rgba(214,181,106,.35);white-space:nowrap;font-weight:600;font-size:14px;letter-spacing:.4px;}
+.top-scroll-track{display:inline-block;padding:9px 0;animation:shopScroll 18s linear infinite;}
+.top-scroll-track span{display:inline-block;padding:0 45px;}
+@keyframes shopScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
 </style>
 <style>
 .products-grid-inner{display:contents}
@@ -93,6 +100,8 @@ section{padding:45px 5%}
 <a href="#contact">Contact</a>
 </nav>
 </header>
+<div class="top-scroll-bar" aria-label="Shop contact information"><div class="top-scroll-track"><span>📞 9948181781 • 9493680656 &nbsp; | &nbsp; PRINTON ANYTHING • Gift Items</span><span>📞 9948181781 • 9493680656 &nbsp; | &nbsp; PRINTON ANYTHING • Gift Items</span><span>📞 9948181781 • 9493680656 &nbsp; | &nbsp; PRINTON ANYTHING • Gift Items</span><span>📞 9948181781 • 9493680656 &nbsp; | &nbsp; PRINTON ANYTHING • Gift Items</span></div></div>
+
 <section class="hero" id="home">
 <h1>PRINTON ANYTHING</h1>
 <p>Gift Items • Custom Printing • Special Moments</p>
@@ -105,6 +114,7 @@ section{padding:45px 5%}
 
 <section id="products">
 <h2 class="title">Our Products</h2>
+<div id="categoryFilters" class="category-filters"></div>
 <div class="products"><div class="products-grid-inner" id="productsGrid"><p class="loading">Loading products…</p></div></div>
 </section>
 <section class="contact" id="contact">
@@ -170,6 +180,155 @@ function productCard(p){
       <div class="product-actions">
         <a class="order" href="https://wa.me/919948181781?text=${msg}" target="_blank" rel="noopener">
           Order on WhatsApp
+        </a>
+      </div>
+    </div>`;
+}
+
+function escapeHtml(value){
+  return String(value ?? "").replace(/[&<>"']/g, ch => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[ch]));
+}
+
+function getCategories(){
+  const categories = [...new Set(
+    allProducts
+      .map(p => (p.category || "").trim())
+      .filter(Boolean)
+  )];
+
+  return ["All", ...categories];
+}
+
+function getSubcategories(category){
+  const source = category === "All"
+    ? allProducts
+    : allProducts.filter(p => (p.category || "").trim() === category);
+
+  return ["All", ...new Set(
+    source
+      .map(p => (p.subcategory || "").trim())
+      .filter(Boolean)
+  )];
+}
+
+function renderCategoryFilters(){
+  const productsSection = document.getElementById("products");
+  if (!productsSection) return;
+
+  let filters = document.getElementById("categoryFilters");
+
+  if (!filters) {
+    const title = productsSection.querySelector(".title");
+    filters = document.createElement("div");
+    filters.id = "categoryFilters";
+    filters.className = "category-filters";
+    if (title) {
+      title.insertAdjacentElement("afterend", filters);
+    } else {
+      productsSection.prepend(filters);
+    }
+  }
+
+  const categories = getCategories();
+
+  filters.innerHTML = categories.map(category => `
+    <button
+      type="button"
+      class="category-chip ${category === selectedCategory ? "active" : ""}"
+      data-category="${escapeHtml(category)}"
+    >
+      ${escapeHtml(category)}
+    </button>
+  `).join("");
+
+  filters.querySelectorAll(".category-chip").forEach(button => {
+    button.addEventListener("click", () => {
+      selectedCategory = button.dataset.category || "All";
+      selectedSubcategory = "All";
+      renderCategoryFilters();
+      renderProducts();
+    });
+  });
+
+  let subfilters = document.getElementById("subcategoryFilters");
+
+  if (!subfilters) {
+    subfilters = document.createElement("div");
+    subfilters.id = "subcategoryFilters";
+    subfilters.className = "subcategory-filters";
+    filters.insertAdjacentElement("afterend", subfilters);
+  }
+
+  const subcategories = getSubcategories(selectedCategory);
+
+  subfilters.innerHTML = subcategories.length > 1
+    ? subcategories.map(subcategory => `
+        <button
+          type="button"
+          class="subcategory-chip ${subcategory === selectedSubcategory ? "active" : ""}"
+          data-subcategory="${escapeHtml(subcategory)}"
+        >
+          ${escapeHtml(subcategory)}
+        </button>
+      `).join("")
+    : "";
+
+  subfilters.querySelectorAll(".subcategory-chip").forEach(button => {
+    button.addEventListener("click", () => {
+      selectedSubcategory = button.dataset.subcategory || "All";
+      renderCategoryFilters();
+      renderProducts();
+    });
+  });
+}
+
+function renderProducts(){
+  const grid = document.getElementById("productsGrid");
+  if (!grid) return;
+
+  let products = allProducts;
+
+  if (selectedCategory !== "All") {
+    products = products.filter(
+      p => (p.category || "").trim() === selectedCategory
+    );
+  }
+
+  if (selectedSubcategory !== "All") {
+    products = products.filter(
+      p => (p.subcategory || "").trim() === selectedSubcategory
+    );
+  }
+
+  grid.innerHTML = products.length
+    ? products.map(productCard).join("")
+    : '<p class="loading">No products in this collection yet.</p>';
+}
+
+function productCard(p){
+  const msg = encodeURIComponent(
+    "Hello PRINTON ANYTHING, I want to order: " + p.name
+  );
+
+  return `
+    <div class="product">
+      <img
+        class="product-img"
+        src="${escapeHtml(p.image_url)}"
+        alt="${escapeHtml(p.name)}"
+        loading="lazy"
+      >
+      <h3>${escapeHtml(p.name)}</h3>
+      <div class="product-actions">
+        <a
+          class="order"
+          href="https://wa.me/919948181781?text=${msg}"
+          target="_blank"
+          rel="noopener"
+        >
+          Click to Order
         </a>
       </div>
     </div>`;
