@@ -478,24 +478,14 @@ async function loadProducts(){
 
           <button
             class="dark"
-            onclick="editProduct(
-              '${p.id}',
-              ${JSON.stringify(p.name)
-                .replace(/</g,"\\u003c")}
-            )"
+            data-action="rename" data-id="${escapeHtml(p.id)}" data-name="${escapeHtml(p.name)}"
           >
             Rename
           </button>
 
           <button
             class="dark"
-            onclick="editCategory(
-              '${p.id}',
-              ${JSON.stringify(p.category || "")
-                .replace(/</g,"\\u003c")},
-              ${JSON.stringify(p.subcategory || "")
-                .replace(/</g,"\\u003c")}
-            )"
+            data-action="category" data-id="${escapeHtml(p.id)}" data-category="${escapeHtml(p.category || "")}" data-subcategory="${escapeHtml(p.subcategory || "")}"
           >
             Edit Category
           </button>
@@ -503,7 +493,7 @@ async function loadProducts(){
 
           <button
             class="dark"
-            onclick="replacePhoto('${p.id}')"
+            data-action="photo" data-id="${escapeHtml(p.id)}"
           >
             Change Photo
           </button>
@@ -515,7 +505,7 @@ async function loadProducts(){
 
           <button
             class="red"
-            onclick="deleteProduct('${p.id}')"
+            data-action="delete" data-id="${escapeHtml(p.id)}"
           >
             Delete
           </button>
@@ -1256,6 +1246,26 @@ $("importBtn").onclick =
 /* ================================
    START
 ================================ */
+
+document.addEventListener("click", async (event) => {
+  const button = event.target.closest("button[data-action]");
+  if (!button) return;
+  const action = button.dataset.action;
+  const id = button.dataset.id;
+  try {
+    if (action === "rename") {
+      await window.editProduct(id, button.dataset.name || "");
+    } else if (action === "category") {
+      await window.editCategory(id, button.dataset.category || "", button.dataset.subcategory || "");
+    } else if (action === "photo") {
+      await window.replacePhoto(id);
+    } else if (action === "delete") {
+      await window.deleteProduct(id);
+    }
+  } catch (e) {
+    setStatus(e?.message || "Something went wrong.", true);
+  }
+});
 
 init();
 
