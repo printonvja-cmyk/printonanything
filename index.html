@@ -33,12 +33,9 @@ section{padding:70px 6%}
 #productSearch::placeholder{color:#8e8a82}
 #productSearch:focus{border-color:#D6B56A;box-shadow:0 0 0 3px rgba(214,181,106,.12)}
 .category-filters{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin:0 auto 14px;max-width:1000px}
-.category-chip,.subcategory-chip{border:1px solid rgba(214,181,106,.32);background:#151517;color:#d9d4ca;border-radius:999px;padding:10px 17px;font-weight:700;cursor:pointer;transition:.22s;box-shadow:0 4px 14px rgba(0,0,0,.18)}
-.category-chip:hover,.subcategory-chip:hover{border-color:#D6B56A;color:#D6B56A;transform:translateY(-1px)}
-.category-chip.active{background:#D6B56A;color:#111;border-color:#D6B56A}
-.subcategory-filters{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:0 auto 32px;max-width:900px}
-.subcategory-chip{font-size:13px;padding:8px 14px;background:#101012;color:#bcb5a8}
-.subcategory-chip.active{background:rgba(214,181,106,.14);color:#D6B56A;border-color:#D6B56A}
+.category-chip{border:1px solid rgba(214,181,106,.38);background:linear-gradient(145deg,#1b1b1f,#101012);color:#eee8dc;border-radius:12px;padding:11px 18px;font-weight:700;cursor:pointer;transition:transform .22s,background .22s,border-color .22s,box-shadow .22s;box-shadow:0 5px 16px rgba(0,0,0,.28);letter-spacing:.2px}
+.category-chip:hover{border-color:#D6B56A;color:#D6B56A;transform:translateY(-2px);box-shadow:0 8px 20px rgba(214,181,106,.10)}
+.category-chip.active{background:linear-gradient(135deg,#D6B56A,#b9903e);color:#111;border-color:#D6B56A;box-shadow:0 7px 20px rgba(214,181,106,.22)}
 .products{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;max-width:1200px;margin:auto}
 .products-grid-inner{display:contents}
 .product{background:linear-gradient(145deg,#171719,#101012);border:1px solid rgba(214,181,106,.14);border-radius:18px;padding:15px;text-align:center;box-shadow:0 12px 30px rgba(0,0,0,.28);overflow:hidden;transition:transform .25s,border-color .25s,box-shadow .25s}
@@ -61,7 +58,7 @@ footer{background:#050506;color:#777;text-align:center;padding:26px;font-size:13
 header{padding:10px 5%}.logo img{width:130px}nav{gap:10px}nav a{font-size:11px}
 .hero{padding:75px 18px 70px}.hero h1{font-size:31px;letter-spacing:2px}.hero p{font-size:15px}
 section{padding:50px 5%}.products{grid-template-columns:1fr}.product-img{height:330px;padding:6px}.title{font-size:27px}
-.category-filters{gap:8px}.category-chip,.subcategory-chip{padding:9px 13px;font-size:13px}
+.category-filters{gap:9px}.category-chip{padding:9px 13px;font-size:13px;border-radius:10px}
 }
 </style>
 <style>
@@ -126,7 +123,6 @@ const client = hasSupabaseConfig
 
 let allProducts = [];
 let selectedCategory = "All";
-let selectedSubcategory = "All";
 
 const fallbackProducts = [];
 
@@ -188,17 +184,6 @@ function getCategories(){
   return ["All", ...categories];
 }
 
-function getSubcategories(category){
-  const source = category === "All"
-    ? allProducts
-    : allProducts.filter(p => (p.category || "").trim() === category);
-
-  return ["All", ...new Set(
-    source
-      .map(p => (p.subcategory || "").trim())
-      .filter(Boolean)
-  )];
-}
 
 function renderCategoryFilters(){
   const productsSection = document.getElementById("products");
@@ -233,42 +218,11 @@ function renderCategoryFilters(){
   filters.querySelectorAll(".category-chip").forEach(button => {
     button.addEventListener("click", () => {
       selectedCategory = button.dataset.category || "All";
-      selectedSubcategory = "All";
       renderCategoryFilters();
       renderProducts();
     });
   });
 
-  let subfilters = document.getElementById("subcategoryFilters");
-
-  if (!subfilters) {
-    subfilters = document.createElement("div");
-    subfilters.id = "subcategoryFilters";
-    subfilters.className = "subcategory-filters";
-    filters.insertAdjacentElement("afterend", subfilters);
-  }
-
-  const subcategories = getSubcategories(selectedCategory);
-
-  subfilters.innerHTML = subcategories.length > 1
-    ? subcategories.map(subcategory => `
-        <button
-          type="button"
-          class="subcategory-chip ${subcategory === selectedSubcategory ? "active" : ""}"
-          data-subcategory="${escapeHtml(subcategory)}"
-        >
-          ${escapeHtml(subcategory)}
-        </button>
-      `).join("")
-    : "";
-
-  subfilters.querySelectorAll(".subcategory-chip").forEach(button => {
-    button.addEventListener("click", () => {
-      selectedSubcategory = button.dataset.subcategory || "All";
-      renderCategoryFilters();
-      renderProducts();
-    });
-  });
 }
 
 function renderProducts(){
@@ -283,11 +237,6 @@ function renderProducts(){
     );
   }
 
-  if (selectedSubcategory !== "All") {
-    products = products.filter(
-      p => (p.subcategory || "").trim() === selectedSubcategory
-    );
-  }
 
   const search = document.getElementById("productSearch");
   const term = search ? search.value.trim().toLowerCase() : "";
