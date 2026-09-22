@@ -60,6 +60,28 @@ header{padding:10px 5%}.logo img{width:130px}nav{gap:10px}nav a{font-size:11px}
 section{padding:50px 5%}.products{grid-template-columns:1fr}.product-img{height:330px;padding:6px}.title{font-size:27px}
 .category-filters{gap:9px}.category-chip{padding:9px 13px;font-size:13px;border-radius:10px}
 }
+
+/* Professional polish — keeps the existing black/gold design and functionality */
+.collections-intro{text-align:center;max-width:760px;margin:0 auto 22px;padding:0 16px}
+.collections-intro h3{font-size:clamp(24px,4vw,32px);font-weight:600;color:#f5f1e8;margin-bottom:7px}
+.collections-intro p{color:#aaa49a;font-size:14px;line-height:1.7}
+.why-us{padding:54px 6% 58px;background:#0f0f12;border-top:1px solid rgba(214,181,106,.10);border-bottom:1px solid rgba(214,181,106,.10)}
+.why-us-inner{max-width:1100px;margin:auto}
+.why-us-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:26px}
+.why-card{background:linear-gradient(145deg,#171719,#101012);border:1px solid rgba(214,181,106,.18);border-radius:18px;padding:25px 20px;text-align:center;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
+.why-card:hover{transform:translateY(-3px);border-color:rgba(214,181,106,.45);box-shadow:0 12px 28px rgba(0,0,0,.22)}
+.why-icon{font-size:28px;margin-bottom:10px}
+.why-card h3{font-size:17px;color:#e5c77f;margin-bottom:7px}
+.why-card p{font-size:13px;color:#aaa49a;line-height:1.65}
+.product{border:1px solid rgba(214,181,106,.16)!important;border-radius:18px!important;background:linear-gradient(145deg,#151517,#0f0f11)!important;overflow:hidden;transition:transform .22s ease,border-color .22s ease,box-shadow .22s ease!important}
+.product:hover{transform:translateY(-4px);border-color:rgba(214,181,106,.42)!important;box-shadow:0 14px 30px rgba(0,0,0,.25)}
+.product img.product-img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;transition:transform .3s ease}
+.product:hover img.product-img{transform:scale(1.025)}
+.product h3{padding:15px 15px 8px;font-size:15px;line-height:1.45;min-height:58px}
+.product-actions{padding:0 15px 16px}
+.product .order{display:inline-flex;justify-content:center;align-items:center;width:100%;min-height:42px;border-radius:11px}
+@media(max-width:760px){.why-us{padding:42px 5% 46px}.why-us-grid{grid-template-columns:1fr;gap:12px}.why-card{padding:20px 16px}.why-card:hover{transform:none}.product:hover{transform:none}.product:hover img.product-img{transform:none}.collections-intro{margin-bottom:18px}}
+
 </style>
 <style>
 .products-grid-inner{display:contents}
@@ -74,6 +96,12 @@ section{padding:50px 5%}.products{grid-template-columns:1fr}.product-img{height:
 .shop-map-frame iframe{width:100%;height:100%;border:0;display:block;}
 .map-button{display:inline-block;margin-top:14px;padding:11px 18px;border-radius:999px;background:#d6b56a;color:#050506;text-decoration:none;font-weight:700;}
 @media (max-width:600px){.shop-map{padding:0 14px}.shop-map-frame{height:300px}}
+</style>
+
+<style id="poppins-font-only">
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+body, button, input, select, textarea, .category-chip, .product-name, .product-card h3, .button { font-family: 'Poppins', Arial, sans-serif !important; }
+h1, h2, h3, .hero h1, .section-title, .shop-title { font-family: 'Poppins', Arial, sans-serif !important; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -101,9 +129,22 @@ section{padding:50px 5%}.products{grid-template-columns:1fr}.product-img{height:
 
 <section id="products">
 <h2 class="title">Our Products</h2>
+<div class="collections-intro"><h3>Explore Our Collections</h3><p>Find the perfect gift for birthdays, anniversaries, special moments and more.</p></div>
 <div id="categoryFilters" class="category-filters"></div>
 <div class="products"><div class="products-grid-inner" id="productsGrid"><p class="loading">Loading products…</p></div></div>
 </section>
+
+<section class="why-us" aria-label="Why choose PRINTON ANYTHING">
+  <div class="why-us-inner">
+    <h2 class="title">Why Choose Us?</h2>
+    <div class="why-us-grid">
+      <div class="why-card"><div class="why-icon">🎁</div><h3>Made for Moments</h3><p>Personalized gift ideas created for birthdays, anniversaries and special memories.</p></div>
+      <div class="why-card"><div class="why-icon">✨</div><h3>Custom Printing</h3><p>Turn your photos and ideas into meaningful gifts made just for you.</p></div>
+      <div class="why-card"><div class="why-icon">💬</div><h3>Easy Ordering</h3><p>Choose a product and contact us directly on WhatsApp to place your order.</p></div>
+    </div>
+  </div>
+</section>
+
 <section class="contact" id="contact">
 <h2 class="title">Contact Us</h2>
 <p>📍 D.NO. 28-7-11, Mohiddin Street, Arundalpet, Eluru Road, Vijayawada - 520002</p>
