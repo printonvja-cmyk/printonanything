@@ -82,6 +82,22 @@ section{padding:50px 5%}.products{grid-template-columns:1fr}.product-img{height:
 .product .order{display:inline-flex;justify-content:center;align-items:center;width:100%;min-height:42px;border-radius:11px}
 @media(max-width:760px){.why-us{padding:42px 5% 46px}.why-us-grid{grid-template-columns:1fr;gap:12px}.why-card{padding:20px 16px}.why-card:hover{transform:none}.product:hover{transform:none}.product:hover img.product-img{transform:none}.collections-intro{margin-bottom:18px}}
 
+
+/* Gift Finder + Popular Picks */
+.gift-finder{max-width:1100px;margin:0 auto 34px;padding:24px 20px;border:1px solid rgba(214,181,106,.18);border-radius:20px;background:linear-gradient(145deg,#151517,#0f0f11);box-shadow:0 12px 30px rgba(0,0,0,.22)}
+.gift-finder h3{text-align:center;color:#e5c77f;font-size:22px;margin-bottom:6px}
+.gift-finder p{text-align:center;color:#aaa49a;font-size:13px;margin-bottom:17px}
+.gift-finder-options{display:flex;flex-wrap:wrap;justify-content:center;gap:9px}
+.gift-finder-btn{border:1px solid rgba(214,181,106,.32);background:#111114;color:#eee8dc;border-radius:999px;padding:10px 15px;font:600 13px Poppins,Arial,sans-serif;cursor:pointer;transition:.2s}
+.gift-finder-btn:hover,.gift-finder-btn.active{background:#d6b56a;color:#111;border-color:#d6b56a;transform:translateY(-1px)}
+.popular-picks{max-width:1200px;margin:0 auto 45px;padding:0 0 10px}
+.popular-picks .title{margin-bottom:22px}
+.popular-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.popular-card{position:relative;background:linear-gradient(145deg,#171719,#101012);border:1px solid rgba(214,181,106,.16);border-radius:16px;padding:11px;text-align:center;overflow:hidden}
+.popular-card img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:11px;background:#f0ede7}
+.popular-card h4{color:#f5f1e8;font-size:14px;line-height:1.4;padding:11px 5px 4px}
+.new-badge{position:absolute;top:18px;left:18px;background:#d6b56a;color:#111;border-radius:999px;padding:5px 9px;font-size:10px;font-weight:800;letter-spacing:.5px;z-index:2}
+@media(max-width:800px){.popular-grid{grid-template-columns:repeat(2,1fr);gap:12px}.gift-finder{padding:20px 14px}}
 </style>
 <style>
 .products-grid-inner{display:contents}
@@ -127,11 +143,29 @@ h1, h2, h3, .hero h1, .section-title, .shop-title { font-family: 'Poppins', Aria
   <input id="productSearch" type="search" placeholder="Search gifts..." aria-label="Search products">
 </div>
 
+<section class="gift-finder" aria-label="Gift finder">
+  <h3>🎁 Find Your Gift</h3>
+  <p>Choose a gift type and discover matching products.</p>
+  <div class="gift-finder-options">
+    <button type="button" class="gift-finder-btn" data-gift="Birthday">🎂 Birthday</button>
+    <button type="button" class="gift-finder-btn" data-gift="Wedding">💍 Wedding</button>
+    <button type="button" class="gift-finder-btn" data-gift="Anniversary">❤️ Anniversary</button>
+    <button type="button" class="gift-finder-btn" data-gift="Photo">📸 Photo Gifts</button>
+    <button type="button" class="gift-finder-btn" data-gift="T-Shirt">👕 T-Shirts</button>
+    <button type="button" class="gift-finder-btn" data-gift="All">✨ Show All</button>
+  </div>
+</section>
+
 <section id="products">
 <h2 class="title">Our Products</h2>
 <div class="collections-intro"><h3>Explore Our Collections</h3><p>Find the perfect gift for birthdays, anniversaries, special moments and more.</p></div>
 <div id="categoryFilters" class="category-filters"></div>
 <div class="products"><div class="products-grid-inner" id="productsGrid"><p class="loading">Loading products…</p></div></div>
+</section>
+
+<section class="popular-picks" aria-label="Popular picks">
+  <h2 class="title">Popular Picks</h2>
+  <div class="popular-grid" id="popularGrid"></div>
 </section>
 
 <section class="why-us" aria-label="Why choose PRINTON ANYTHING">
@@ -196,6 +230,7 @@ async function loadProducts(){
   const grid = document.getElementById("productsGrid");
   if (!client) {
     allProducts = fallbackProducts || [];
+    renderPopularPicks();
     renderCategoryFilters();
     renderProducts();
     return;
@@ -203,7 +238,7 @@ async function loadProducts(){
 
   const { data, error } = await client
     .from("products")
-    .select("id,name,image_url,sort_order,category,subcategory")
+    .select("id,name,image_url,sort_order,category,subcategory,created_at")
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
 
@@ -214,8 +249,49 @@ async function loadProducts(){
   }
 
   allProducts = data || [];
+  renderPopularPicks();
   renderCategoryFilters();
   renderProducts();
+}
+
+function getNewestProductIds(){
+  return new Set(
+    [...allProducts]
+      .filter(p => p.created_at)
+      .sort((a,b) => new Date(b.created_at) - new Date(a.created_at))
+      .slice(0,3)
+      .map(p => p.id)
+  );
+}
+
+function renderPopularPicks(){
+  const wrap = document.getElementById("popularGrid");
+  if (!wrap) return;
+  const picks = [...allProducts].slice(0, 4);
+  wrap.innerHTML = picks.length ? picks.map((p, index) => `
+    <div class="popular-card">
+      <img src="${escapeHtml(p.image_url)}" alt="${escapeHtml(p.name)}" loading="lazy">
+      <h4>${escapeHtml(p.name)}</h4>
+    </div>
+  `).join("") : "";
+}
+
+function setupGiftFinder(){
+  document.querySelectorAll(".gift-finder-btn").forEach(button => {
+    button.addEventListener("click", () => {
+      const term = button.dataset.gift || "All";
+      document.querySelectorAll(".gift-finder-btn").forEach(b => b.classList.remove("active"));
+      button.classList.add("active");
+      const search = document.getElementById("productSearch");
+      if (term === "All") {
+        if (search) search.value = "";
+      } else if (search) {
+        search.value = term;
+      }
+      renderProducts();
+      document.getElementById("products")?.scrollIntoView({behavior:"smooth", block:"start"});
+    });
+  });
 }
 
 function productCard(p){
@@ -320,8 +396,12 @@ function productCard(p){
     "Hello PRINTON ANYTHING, I want to order: " + p.name
   );
 
+  const newestIds = getNewestProductIds();
+  const badge = newestIds.has(p.id) ? '<span class="new-badge">NEW</span>' : '';
+
   return `
-    <div class="product">
+    <div class="product" style="position:relative">
+      ${badge}
       <img
         class="product-img"
         src="${escapeHtml(p.image_url)}"
@@ -348,6 +428,7 @@ function escapeHtml(value){
   }[ch]));
 }
 
+setupGiftFinder();
 loadProducts();
 
 /* Small website enhancements: search, image zoom, and floating WhatsApp. */
